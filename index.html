@@ -549,7 +549,14 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
     if (p && p.catch) p.catch(function () { setDisc(false); });
   }
   bgm.addEventListener('playing', function () { setDisc(true); });
-  bgm.addEventListener('pause', function () { setDisc(false); });
+  bgm.addEventListener('pause', function () { if (!bgm.ended) setDisc(false); });
+  // Dự phòng cho trình duyệt trong Messenger/Zalo bỏ qua thuộc tính loop: hết bài thì tự phát lại từ đầu
+  bgm.addEventListener('ended', function () {
+    if (!wantMusic) return;
+    bgm.currentTime = 0;
+    var p = bgm.play();
+    if (p && p.catch) p.catch(function () {});
+  });
   // Không có file nhạc hoặc lỗi tải: đĩa chỉ để trang trí
   bgm.addEventListener('error', function () { wantMusic = false; setDisc(false); disc.disabled = true; });
   disc.addEventListener('click', function () {
