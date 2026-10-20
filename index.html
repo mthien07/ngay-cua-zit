@@ -20,8 +20,14 @@
 <link rel="preload" as="image" href="photos/p01.webp" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;700;800&family=Playwrite+VN:wght@100..400&display=swap">
-<script>document.documentElement.classList.add('js')</script>
+<script>
+  // Font Google tải không chặn hiển thị; màn chờ đợi font xong (hoặc lỗi) qua gfReady
+  window.gfReady = new Promise(function (r) { window.gfDone = r; });
+  document.documentElement.classList.add('js');
+  // Nếu script chính lỗi giữa chừng thì bỏ chế độ ẩn-chờ-hiệu-ứng để chữ vẫn hiện bình thường
+  window.addEventListener('error', function () { document.documentElement.classList.remove('js'); });
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;700;800&family=Playwrite+VN:wght@100..400&display=swap" media="print" onload="this.media='all';gfDone()" onerror="gfDone()">
 <style>
 /* Layout: mỗi màn hình là một "video" 9:16, vuốt lên để chuyển cảnh.
    Lớp giao diện TikTok (tab, nút tim, caption, thanh tua) phủ lên mọi cảnh.
@@ -51,6 +57,9 @@
 [hidden]{display:none!important}
 img{max-width:100%}
 html,body{height:100%}
+/* Chặn chạm-đúp-để-phóng-to của trình duyệt trên mọi phần tử (vẫn cho cuộn và chụm 2 ngón), để bấm tim liên tục không làm trang tự zoom */
+*{touch-action:manipulation}
+.chrome{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body{margin:0;display:flex;justify-content:center;background:var(--ink);color:var(--paper);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent}
 :focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
@@ -70,7 +79,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .reel{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .reel::-webkit-scrollbar{display:none}
 .slide{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:var(--bg,var(--ink));color:var(--fg,var(--paper));view-timeline:--slide block}
-.slide-in{height:100%;display:flex;flex-direction:column;justify-content:center;padding-block:68px 124px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.slide-in{height:100%;display:flex;flex-direction:column;justify-content:center;justify-content:safe center;padding-block:68px 124px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .col{margin-right:56px;display:flex;flex-direction:column;gap:18px;min-width:0}
 
 /* Vào cảnh: các khối nổi lên lần lượt (stagger 90ms), chạy lại mỗi lần cảnh vào khung hình */
@@ -109,15 +118,16 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .photos{position:absolute;inset:0;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
 .photos::-webkit-scrollbar{display:none}
 .ph{position:relative;flex:0 0 100%;height:100%;margin:0;scroll-snap-align:center;scroll-snap-stop:always;background:var(--c,var(--ink));overflow:hidden}
-.ph img{display:block;width:100%;height:100%;object-fit:cover;transform-origin:50% 40%}
+.ph img{display:block;width:100%;height:100%;object-fit:cover;transform-origin:50% 40%;pointer-events:none;-webkit-user-drag:none}
 /* Ảnh chưa tải xong hoặc lỗi: ẩn chữ mô tả, chỉ để nền màu chủ đạo của ảnh và một vệt sáng chạy qua */
 .ph img,.cover-bg{color:transparent;font-size:0}
 .s-photos.wait .ph.cur::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,#fff0 35%,#ffffff26 50%,#fff0 65%);background-size:250% 100%;animation:shimmer 1.2s linear infinite}
 .ph.cur img{animation:ken 7s var(--ease-out) both}
 .ph figcaption{--rot:-1.5deg;position:absolute;left:max(16px,env(safe-area-inset-left,0px));right:76px;bottom:108px;width:fit-content;max-width:calc(100% - 92px);background:var(--butter);color:var(--ink);font-weight:800;font-size:15px;line-height:1.35;padding:9px 14px;border-radius:12px;box-shadow:3px 3px 0 var(--hot);transform:rotate(var(--rot))}
 .ph:nth-child(even) figcaption{--rot:1.5deg}
-.js .ph:not(.cur) figcaption{opacity:0}
-.ph.cur figcaption{animation:cap-in .55s var(--ease-back) .25s both}
+.js .ph figcaption{opacity:0}
+.ready .s-photos.in .ph.cur figcaption{opacity:1}
+.ready .s-photos.in .ph.cur figcaption{animation:cap-in .55s var(--ease-back) .25s both}
 .s-photos.paused .ph.cur img,.s-photos.wait .ph.cur img,.s-photos:not(.in) .ph.cur img{animation-play-state:paused}
 .bars{position:absolute;z-index:3;top:46px;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:4px;pointer-events:none}
 .bars i{flex:1;height:3px;border-radius:2px;background:#ffffff59;overflow:hidden}
@@ -137,6 +147,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .bar{height:14px;margin-top:6px;border-radius:99px;background:#14060f26;overflow:hidden}
 .bar i{display:block;height:100%;width:var(--w);border-radius:99px;background:var(--ink);transform-origin:left center}
 .bar.over i{background:repeating-linear-gradient(115deg,var(--ink) 0 8px,var(--butter) 8px 16px);background-size:32px 100%;animation:slide 1s linear infinite}
+.s-stats:not(.in) .bar i{animation-play-state:paused}
 .js .s-stats .bar i{transform:scaleX(0)}
 .ready .s-stats.in .bar i{animation:fill 1.2s var(--ease-out) both;animation-delay:calc(var(--i)*.14s + .45s)}
 .ready .s-stats.in .bar.over i{animation:fill 1.2s var(--ease-out) both,slide 1s linear infinite;animation-delay:calc(var(--i)*.14s + .45s),0s}
@@ -171,11 +182,15 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .arena{position:relative;height:150px;margin-top:6px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:14px 26px;border-radius:99px;font-weight:800;font-size:18px;white-space:nowrap;transition:transform var(--t-quick) var(--ease-out)}
 .btn:active{transform:scale(.94)}
-.yes{position:absolute;left:0;top:0;background:var(--ink);color:var(--paper);transform-origin:0 0;transform:scale(var(--grow,1));transition:transform .35s var(--ease-back);box-shadow:0 8px 24px #14060f40}
+.yes{position:absolute;left:0;top:0;background:var(--ink);color:var(--paper);transform-origin:0 0;transform:scale(var(--grow,1));transition:transform .35s var(--ease-back),opacity var(--t-std) var(--ease-out),box-shadow var(--t-std);box-shadow:0 8px 24px #14060f40}
+/* Đã trả lời: nút "Có" mờ đi, không bấm lại được */
+.yes:disabled{opacity:.4;box-shadow:none;cursor:default}
 .yes:active{transform:scale(calc(var(--grow,1) * .94))}
 .no{position:absolute;left:58%;top:70px;border:2.5px solid var(--ink);transition:left .32s var(--ease-back),top .32s var(--ease-back),opacity var(--t-std)}
+/* Hết đường né: nút "Không" co lại rồi biến mất, chỉ còn nút "Có" */
+.no.gone{opacity:0;transform:scale(.4) rotate(-10deg);pointer-events:none;transition:opacity .35s var(--ease-out),transform .35s var(--ease-out)}
 .answer{margin:0;min-height:44px;font-weight:700;font-size:16px;line-height:1.45}
-.ready .slide.in .col>.answer:not(:empty){animation:rise-in .5s var(--ease-out) both}
+.ready .slide.in .col>.answer:not(:empty){animation:answer-in .5s var(--ease-out) both}
 .next{align-self:flex-start;background:var(--paper);color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
 .ready .slide.in .col>.next{animation:pop .5s var(--ease-back) .2s both}
 
@@ -231,6 +246,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:9}
 
 @keyframes rise-in{from{opacity:0;transform:translateY(22px)}to{opacity:var(--o,1);transform:none}}
+@keyframes answer-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes recede{to{opacity:.25;transform:translateY(-8%) scale(.92)}}
 @keyframes cover-in{from{opacity:0;transform:scale(1.12)}to{opacity:1;transform:none}}
 @keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(.96)}45%{transform:scale(1.1)}}
@@ -255,6 +271,38 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 @keyframes count-bump{0%{transform:translateY(0)}40%{transform:translateY(-5px) scale(1.15)}100%{transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes marq{to{transform:translateX(-50%)}}
+
+/* Màn hình thấp (iPhone SE, trình duyệt trong Messenger/Zalo có thanh công cụ): thu gọn chữ và khoảng cách
+   để nội dung không chui xuống dưới thanh tab phía trên hay caption phía dưới */
+@media (max-height:720px){
+  .slide-in{padding-block:50px 104px}
+  .s-letter .slide-in{padding-block:46px 104px}
+  .col{gap:12px}
+  .title{font-size:clamp(30px,min(11vw,7.2vh),52px);line-height:1.08}
+  .note{font-size:13px}
+  .stats{gap:10px}
+  .stats .row b{font-size:19px}
+  .bar{height:11px;margin-top:4px}
+  .flags{gap:8px}
+  .flags li{font-size:14px;padding:7px 12px}
+  .gift{width:min(170px,46vw)}
+  .t-top{padding:12px 16px 10px}
+  .t-mid{padding:10px 16px 12px}
+  .ticket ul{gap:7px;margin-bottom:8px}
+  .days b{font-size:min(30vw,20vh)}
+}
+
+@media (max-height:600px){
+  .slide-in{padding-block:44px 102px}
+  .col{gap:9px}
+  .title{font-size:clamp(28px,min(10vw,6.4vh),40px)}
+  .stats{gap:7px}
+  .stats .row{font-size:13px}
+  .stats .row b{font-size:17px}
+  .bar{height:10px}
+  .flags{gap:7px}
+  .flags li{font-size:13px;padding:6px 11px}
+}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:.01ms!important}
@@ -425,7 +473,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 <script>
 (function () {
   // Sửa 2 dòng này để cá nhân hoá:
-  //   name: tên người yêu (để trống thì trang dùng "em")
+  //   name: tên người yêu, thay vào các chỗ [data-name] (các câu khác trong trang đã viết sẵn tên Zịt)
   //   startDate: ngày bắt đầu yêu, dạng 'YYYY-MM-DD' (để trống thì ẩn cảnh "Đã bên nhau")
   var CONFIG = { name: 'Zịt', startDate: '2026-07-06' };
 
@@ -433,7 +481,12 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
   var root = document.documentElement;
   var reel = $('reel'), phone = $('phone');
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var buzz = function (p) { if (!reduce && navigator.vibrate) { try { navigator.vibrate(p); } catch (e) {} } };
+  // Rung nhẹ chỉ sau khi người xem đã chạm vào trang (trình duyệt chặn rung khi chưa có thao tác thật)
+  var buzz = function (p) {
+    var act = navigator.userActivation;
+    if (reduce || !navigator.vibrate || (act && !act.hasBeenActive)) return;
+    try { navigator.vibrate(p); } catch (e) {}
+  };
   // Chạy lại một animation CSS bằng cách gỡ class rồi gắn lại sau một lần reflow
   var replayClass = function (el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
 
@@ -452,7 +505,10 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
   function reveal() { if (ready) return; ready = true; root.classList.add('ready'); }
   var cover = $('coverImg');
   var coverReady = cover.decode ? cover.decode().catch(function () {}) : Promise.resolve();
-  var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  var fontsReady = window.gfReady.then(function () {
+    if (!document.fonts || !document.fonts.load) return;
+    return Promise.all([document.fonts.load('1em Anton'), document.fonts.load('800 1em "Be Vietnam Pro"')]);
+  }).catch(function () {});
   Promise.all([coverReady, fontsReady]).then(function () { setTimeout(reveal, reduce ? 0 : 350); });
   setTimeout(reveal, 2500);
 
@@ -503,7 +559,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
   }
 
   function step(t) {
-    var dt = Math.min(.05, (t - last) / 1000); last = t;
+    var dt = Math.max(0, Math.min(.05, (t - last) / 1000)); last = t;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     for (var i = parts.length - 1; i >= 0; i--) {
@@ -597,7 +653,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
     if (nx) nx.loading = 'eager';
   }
   album.addEventListener('scroll', function () {
-    setCur(Math.round(album.scrollLeft / Math.max(1, album.clientWidth)));
+    setCur(Math.max(0, Math.min(figs.length - 1, Math.round(album.scrollLeft / Math.max(1, album.clientWidth)))));
     if (album.scrollLeft > 20) hint.classList.add('gone');
   }, { passive: true });
   setCur(0);
@@ -605,6 +661,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
   var hold = function () { sP.classList.add('paused'); };
   var release = function () { if (!document.hidden) sP.classList.remove('paused'); };
   album.addEventListener('pointerdown', hold);
+  album.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { album.addEventListener(ev, release); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) hold(); else release(); });
 
@@ -630,8 +687,8 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
     if (now - lastTap < 320 && Math.hypot(e.clientX - lx, e.clientY - ly) < 40) { like(e.clientX, e.clientY, true); lastTap = 0; }
     else { lastTap = now; lx = e.clientX; ly = e.clientY; }
   });
-  // Chặn zoom/bôi đen khi chạm đúp trên trình duyệt di động
-  reel.addEventListener('dblclick', function (e) { e.preventDefault(); });
+  // Chặn zoom/bôi đen khi chạm đúp ở bất kỳ đâu (kể cả cột nút tim bên phải)
+  document.addEventListener('dblclick', function (e) { e.preventDefault(); }, { passive: false });
 
   /* ---------- Đã bên nhau (tuỳ chọn) ---------- */
   if (CONFIG.startDate) {
@@ -659,29 +716,41 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
     yes.style.setProperty('--grow', 1 + Math.min(dodges, 4) * .09);
     buzz(8);
     if (dodges >= lines.length - 1) { no.style.left = '0px'; no.style.top = '84px'; return; }
-    var a = arena.getBoundingClientRect(), y = yes.getBoundingClientRect(), b = no.getBoundingClientRect();
-    var maxX = Math.max(0, a.width - b.width), maxY = Math.max(0, a.height - b.height), px = 0, py = 0;
-    for (var i = 0; i < 12; i++) {
+    // Kích thước "Có" lấy theo cỡ đích (đang phóng to dở thì getBoundingClientRect còn nhỏ hơn)
+    var a = arena.getBoundingClientRect(), b = no.getBoundingClientRect(), g = 1 + Math.min(dodges, 4) * .09;
+    var yw = yes.offsetWidth * g, yh = yes.offsetHeight * g;
+    var maxX = Math.max(0, a.width - b.width), maxY = Math.max(0, a.height - b.height), px = 0, py = maxY, hit = true;
+    for (var i = 0; i < 12 && hit; i++) {
       px = Math.random() * maxX; py = Math.random() * maxY;
-      var hit = px < y.width + 10 && py < y.height + 10;
-      if (!hit) break;
+      hit = px < yw + 10 && py < yh + 10;
     }
+    // Không tìm được chỗ trống thì đặt sát đáy khu vực, luôn nằm dưới nút "Có"
+    if (hit) py = maxY;
     no.style.left = px + 'px'; no.style.top = py + 'px';
   }
-  function accept(fromEl) {
+  // Cho nút "Không" co lại, biến mất hẳn sau khi hiệu ứng chạy xong
+  function vanishNo() {
+    if (no.classList.contains('gone')) return;
+    no.disabled = true;
+    no.classList.add('gone');
+    setTimeout(function () { no.hidden = true; }, reduce ? 0 : 380);
+  }
+  // Chỉ nút "Có" mới tính là trả lời: bắn tim, hiện lời nhắn, nút "Có" mờ đi
+  function accept() {
     if (answered) return;
     answered = true;
     answer.textContent = 'Anh biết mà. Anh cũng thương Zịt, nhiều hơn Zịt nghĩ.';
-    yes.disabled = true; no.disabled = true;
-    no.style.opacity = '.35';
+    yes.disabled = true;
+    vanishNo();
     next.hidden = false;
     buzz([18, 40, 18]);
-    var r = fromEl.getBoundingClientRect();
+    var r = yes.getBoundingClientRect();
     spawn(r.left + r.width / 2, r.top + r.height / 2, 'party', 46);
   }
   no.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse' && dodges < lines.length - 1) dodge(); });
-  no.addEventListener('click', function () { if (dodges < lines.length - 1) dodge(); else accept(no); });
-  yes.addEventListener('click', function () { accept(yes); });
+  // Bấm "Không" tới câu cuối ("Thôi, bấm Có đi mà") rồi bấm thêm lần nữa thì nút biến mất, không có hiệu ứng
+  no.addEventListener('click', function () { if (dodges < lines.length - 1) dodge(); else { buzz(8); vanishNo(); } });
+  yes.addEventListener('click', accept);
   next.addEventListener('click', function () { var s = $('s6'); go(s.offsetTop); });
 
   /* ---------- Quà: lấy đà (rung) → bật nắp → hiện phiếu ---------- */

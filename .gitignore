@@ -1,2 +1,5 @@
 .claude/
 .DS_Store
+plans/
+node_modules/
+tests/.artifacts/
