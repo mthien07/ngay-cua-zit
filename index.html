@@ -91,8 +91,8 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .splash p{transition:opacity var(--t-std)}
 .splash .open{position:absolute;bottom:20%;padding:14px 28px;border-radius:99px;background:var(--hot);color:var(--ink);font-weight:800;font-size:16px;box-shadow:0 10px 30px #ff2d6f55;opacity:0;transform:translateY(12px) scale(.96);pointer-events:none;transition:opacity var(--t-std) var(--ease-out),transform var(--t-std) var(--ease-back)}
 .splash.loaded{cursor:pointer}
-.splash.loaded p{opacity:0}
-.splash.loaded .open{opacity:1;transform:none;pointer-events:auto;animation:breathe 2.2s ease-in-out .6s infinite}
+.splash.loaded p{opacity:0;transition-duration:.15s}
+.splash.loaded .open{opacity:1;transform:none;pointer-events:auto;transition-delay:.15s;animation:breathe 2.2s ease-in-out .8s infinite}
 
 .reel{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .reel::-webkit-scrollbar{display:none}
