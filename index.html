@@ -17,15 +17,27 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ff2d6f' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54z'/%3E%3C/svg%3E">
-<link rel="preload" as="image" href="photos/p01.webp" fetchpriority="high">
+<!-- Ảnh và nhạc nằm trên Cloudflare R2 (zit.1bee.vn); bản sao trong repo dùng làm dự phòng -->
+<link rel="preconnect" href="https://zit.1bee.vn">
+<link rel="preload" as="image" href="https://zit.1bee.vn/photos/p01.webp" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script>
   // Font Google tải không chặn hiển thị; màn chờ đợi font xong (hoặc lỗi) qua gfReady
   window.gfReady = new Promise(function (r) { window.gfDone = r; });
+  // R2 lỗi hoặc bị chặn: ảnh/nhạc tự lấy lại bản sao trong repo (một lần), người xem không thấy file hỏng
+  var CDN = 'https://zit.1bee.vn/';
+  document.addEventListener('error', function (e) {
+    var t = e.target, src = t && t.getAttribute && t.getAttribute('src');
+    if (!src || src.indexOf(CDN) !== 0 || t.getAttribute('data-fb')) return;
+    t.setAttribute('data-fb', '1');
+    e.stopImmediatePropagation();
+    t.src = src.slice(CDN.length);
+    if (t.tagName === 'AUDIO') t.load();
+  }, true);
   document.documentElement.classList.add('js');
   // Nếu script chính lỗi giữa chừng thì bỏ chế độ ẩn-chờ-hiệu-ứng để chữ vẫn hiện bình thường
-  window.addEventListener('error', function () { document.documentElement.classList.remove('js'); });
+  window.addEventListener('error', function () { document.documentElement.classList.remove('js'); document.documentElement.classList.add('ready'); });
 </script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;700;800&family=Playwrite+VN:wght@100..400&display=swap" media="print" onload="this.media='all';gfDone()" onerror="gfDone()">
 <style>
@@ -75,6 +87,12 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .splash svg{width:64px;height:64px;fill:var(--hot);animation:beat 1.1s var(--ease-out) infinite}
 .splash p{position:absolute;bottom:22%;margin:0;font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;opacity:.6}
 .ready .splash{opacity:0;visibility:hidden}
+/* Tải xong: chữ "đang gói quà" nhường chỗ cho nút "Chạm để mở" (cú chạm này cũng cho phép phát nhạc) */
+.splash p{transition:opacity var(--t-std)}
+.splash .open{position:absolute;bottom:20%;padding:14px 28px;border-radius:99px;background:var(--hot);color:var(--ink);font-weight:800;font-size:16px;box-shadow:0 10px 30px #ff2d6f55;opacity:0;transform:translateY(12px) scale(.96);pointer-events:none;transition:opacity var(--t-std) var(--ease-out),transform var(--t-std) var(--ease-back)}
+.splash.loaded{cursor:pointer}
+.splash.loaded p{opacity:0}
+.splash.loaded .open{opacity:1;transform:none;pointer-events:auto;animation:breathe 2.2s ease-in-out .6s infinite}
 
 .reel{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .reel::-webkit-scrollbar{display:none}
@@ -235,7 +253,11 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .rbtn.pop .ic{animation:like-pop .42s var(--ease-back)}
 .rbtn.pop #likeCount{animation:count-bump .35s var(--ease-back)}
 #likeCount{display:inline-block;font-variant-numeric:tabular-nums}
-.disc{position:relative;width:44px;height:44px;border-radius:50%;border:8px solid #1b1b1b;background:conic-gradient(var(--hot),var(--butter),var(--cyan),var(--hot));animation:spin 5s linear infinite}
+.disc{position:relative;width:44px;height:44px;border-radius:50%;border:8px solid #1b1b1b;background:conic-gradient(var(--hot),var(--butter),var(--cyan),var(--hot));animation:spin 5s linear infinite;animation-play-state:paused;opacity:.65;transition:opacity var(--t-quick),transform var(--t-quick) var(--ease-out)}
+/* Đĩa chỉ quay khi nhạc đang phát; tắt nhạc thì đĩa dừng và mờ đi */
+.disc.on{animation-play-state:running;opacity:1}
+.disc:active{transform:scale(.9)}
+.disc::after{content:"";position:absolute;inset:50% auto auto 50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#1b1b1b}
 .cap{position:absolute;z-index:1;left:max(16px,env(safe-area-inset-left,0px));right:76px;bottom:20px;font-size:13px;line-height:1.4;color:#fff;text-shadow:0 1px 6px #000a}
 .cap b{font-size:15px}
 .cap em{font-style:normal;font-weight:700}
@@ -249,6 +271,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 @keyframes answer-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes recede{to{opacity:.25;transform:translateY(-8%) scale(.92)}}
 @keyframes cover-in{from{opacity:0;transform:scale(1.12)}to{opacity:1;transform:none}}
+@keyframes breathe{50%{transform:scale(1.05)}}
 @keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(.96)}45%{transform:scale(1.1)}}
 @keyframes ken{from{transform:scale(1.1)}to{transform:scale(1)}}
 @keyframes cap-in{from{opacity:0;transform:translateY(14px) rotate(var(--rot)) scale(.9)}to{opacity:1;transform:rotate(var(--rot))}}
@@ -314,15 +337,17 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 </head>
 <body>
 <main class="phone" id="phone">
-  <div class="splash" id="splash" aria-hidden="true">
-    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-    <p>đang gói quà…</p>
+  <div class="splash" id="splash">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    <p aria-hidden="true">đang gói quà…</p>
+    <button class="open" id="openBtn" type="button" tabindex="-1">Chạm để mở 💌</button>
   </div>
+  <audio id="bgm" src="https://zit.1bee.vn/music/am-tham-ben-em.m4a" loop preload="metadata" playsinline></audio>
 
   <div class="reel" id="reel">
 
     <section class="slide s-cover" id="s0" aria-label="Mở đầu">
-      <img class="cover-bg" id="coverImg" src="photos/p01.webp" width="1100" height="1467" alt="Zịt đứng bên sông, thành phố lên đèn phía sau" fetchpriority="high" decoding="async">
+      <img class="cover-bg" id="coverImg" src="https://zit.1bee.vn/photos/p01.webp" width="1100" height="1467" alt="Zịt đứng bên sông, thành phố lên đèn phía sau" fetchpriority="high" decoding="async">
       <div class="slide-in"><div class="col">
         <p class="pov"><i>POV</i><span>Zịt vừa mở link anh gửi</span></p>
         <div class="glitch date" data-text="20.10" role="img" aria-label="20 tháng 10">20.10</div>
@@ -333,16 +358,16 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 
     <section class="slide s-photos" id="sP" aria-label="Album ảnh">
       <div class="photos" id="photos">
-        <figure class="ph" style="--c:#3B2BC2"><img src="photos/p02.webp" width="1100" height="1467" alt="Zịt đứng cạnh bể cá ánh xanh, ôm bó hoa" decoding="async"><figcaption>Ánh xanh này hợp Zịt ghê</figcaption></figure>
-        <figure class="ph" style="--c:#5F667B"><img src="photos/p03.webp" width="1100" height="1467" alt="Zịt cười, nhìn xuống bó hoa hồng" loading="lazy" decoding="async"><figcaption>Cười thế này ai mà chịu nổi</figcaption></figure>
-        <figure class="ph" style="--c:#5C5E70"><img src="photos/p04.webp" width="1100" height="1466" alt="Zịt vén tóc, tay ôm bó hoa" loading="lazy" decoding="async"><figcaption>Vén tóc thôi mà anh đứng hình</figcaption></figure>
-        <figure class="ph" style="--c:#7E756E"><img src="photos/p05.webp" width="1100" height="1467" alt="Zịt chỉ tay vào bể cá cam" loading="lazy" decoding="async"><figcaption>Zịt chỉ cá, anh chỉ biết nhìn Zịt</figcaption></figure>
-        <figure class="ph" style="--c:#54629B"><img src="photos/p06.webp" width="1100" height="1467" alt="Zịt nhìn qua bể sứa" loading="lazy" decoding="async"><figcaption>Giữa đàn sứa, Zịt vẫn là điểm sáng</figcaption></figure>
-        <figure class="ph" style="--c:#4D504D"><img src="photos/p07.webp" width="1100" height="1467" alt="Zịt chụp selfie, nháy mắt và đưa tay che miệng" loading="lazy" decoding="async"><figcaption>Góc máy lạ mà vẫn xinh</figcaption></figure>
-        <figure class="ph" style="--c:#A09897"><img src="photos/p08.webp" width="1100" height="1467" alt="Zịt ăn thanh phô mai kéo sợi" loading="lazy" decoding="async"><figcaption>Phô mai kéo sợi, Zịt kéo luôn tim anh</figcaption></figure>
-        <figure class="ph" style="--c:#857465"><img src="photos/p09.webp" width="1100" height="1467" alt="Zịt nháy mắt, giơ ngón tay lên" loading="lazy" decoding="async"><figcaption>Nháy mắt một cái là anh chịu thua</figcaption></figure>
-        <figure class="ph" style="--c:#8F7462"><img src="photos/p10.webp" width="1100" height="1467" alt="Zịt ngồi quán nước với hai ly nước màu hồng và cam" loading="lazy" decoding="async"><figcaption>Hẹn nước với Zịt, bao nhiêu cũng đi</figcaption></figure>
-        <figure class="ph" style="--c:#986B63"><img src="photos/p11.webp" width="1100" height="1467" alt="Zịt ngồi ở rạp phim với bắp rang và nước" loading="lazy" decoding="async"><figcaption>Xem phim với Zịt, bắp chia đôi nha</figcaption></figure>
+        <figure class="ph" style="--c:#3B2BC2"><img src="https://zit.1bee.vn/photos/p02.webp" width="1100" height="1467" alt="Zịt đứng cạnh bể cá ánh xanh, ôm bó hoa" decoding="async"><figcaption>Ánh xanh này hợp Zịt ghê</figcaption></figure>
+        <figure class="ph" style="--c:#5F667B"><img src="https://zit.1bee.vn/photos/p03.webp" width="1100" height="1467" alt="Zịt cười, nhìn xuống bó hoa hồng" loading="lazy" decoding="async"><figcaption>Cười thế này ai mà chịu nổi</figcaption></figure>
+        <figure class="ph" style="--c:#5C5E70"><img src="https://zit.1bee.vn/photos/p04.webp" width="1100" height="1466" alt="Zịt vén tóc, tay ôm bó hoa" loading="lazy" decoding="async"><figcaption>Vén tóc thôi mà anh đứng hình</figcaption></figure>
+        <figure class="ph" style="--c:#7E756E"><img src="https://zit.1bee.vn/photos/p05.webp" width="1100" height="1467" alt="Zịt chỉ tay vào bể cá cam" loading="lazy" decoding="async"><figcaption>Zịt chỉ cá, anh chỉ biết nhìn Zịt</figcaption></figure>
+        <figure class="ph" style="--c:#54629B"><img src="https://zit.1bee.vn/photos/p06.webp" width="1100" height="1467" alt="Zịt nhìn qua bể sứa" loading="lazy" decoding="async"><figcaption>Giữa đàn sứa, Zịt vẫn là điểm sáng</figcaption></figure>
+        <figure class="ph" style="--c:#4D504D"><img src="https://zit.1bee.vn/photos/p07.webp" width="1100" height="1467" alt="Zịt chụp selfie, nháy mắt và đưa tay che miệng" loading="lazy" decoding="async"><figcaption>Góc máy lạ mà vẫn xinh</figcaption></figure>
+        <figure class="ph" style="--c:#A09897"><img src="https://zit.1bee.vn/photos/p08.webp" width="1100" height="1467" alt="Zịt ăn thanh phô mai kéo sợi" loading="lazy" decoding="async"><figcaption>Phô mai kéo sợi, Zịt kéo luôn tim anh</figcaption></figure>
+        <figure class="ph" style="--c:#857465"><img src="https://zit.1bee.vn/photos/p09.webp" width="1100" height="1467" alt="Zịt nháy mắt, giơ ngón tay lên" loading="lazy" decoding="async"><figcaption>Nháy mắt một cái là anh chịu thua</figcaption></figure>
+        <figure class="ph" style="--c:#8F7462"><img src="https://zit.1bee.vn/photos/p10.webp" width="1100" height="1467" alt="Zịt ngồi quán nước với hai ly nước màu hồng và cam" loading="lazy" decoding="async"><figcaption>Hẹn nước với Zịt, bao nhiêu cũng đi</figcaption></figure>
+        <figure class="ph" style="--c:#986B63"><img src="https://zit.1bee.vn/photos/p11.webp" width="1100" height="1467" alt="Zịt ngồi ở rạp phim với bắp rang và nước" loading="lazy" decoding="async"><figcaption>Xem phim với Zịt, bắp chia đôi nha</figcaption></figure>
       </div>
       <div class="bars" id="phBars" aria-hidden="true"></div>
       <p class="ph-tag">Album riêng của Zịt</p>
@@ -457,12 +482,12 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
         <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l-7.5 7.5h5V20h5v-8.5h5z"/></svg></span>
         <span>Về đầu</span>
       </button>
-      <div class="disc" aria-hidden="true"></div>
+      <button class="disc" id="music" type="button" aria-label="Bật/tắt nhạc nền" aria-pressed="false"></button>
     </div>
     <div class="cap" aria-hidden="true">
       <b>@anh</b> · dành cho <span data-name>Zịt</span><br>
       Chúc mừng 20/10 <em>#20thang10 #ngaycuazit</em>
-      <div class="marq"><span>♪ âm thanh gốc · anh &nbsp;&nbsp;&nbsp; ♪ âm thanh gốc · anh &nbsp;&nbsp;&nbsp; ♪ âm thanh gốc · anh &nbsp;&nbsp;&nbsp; ♪ âm thanh gốc · anh &nbsp;&nbsp;&nbsp; </span></div>
+      <div class="marq"><span>♪ Âm Thầm Bên Em (Tuấn Smile x NgThanh Remix) · Sơn Tùng M-TP &nbsp;&nbsp;&nbsp; ♪ Âm Thầm Bên Em (Tuấn Smile x NgThanh Remix) · Sơn Tùng M-TP &nbsp;&nbsp;&nbsp; </span></div>
     </div>
     <div class="seek" aria-hidden="true"><i id="seek"></i></div>
   </div>
@@ -503,14 +528,46 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
   /* ---------- Màn chờ: mở khi ảnh bìa + font sẵn sàng (tối đa 2.5s) ---------- */
   var ready = false;
   function reveal() { if (ready) return; ready = true; root.classList.add('ready'); }
+  // Tải xong thì hiện nút "Chạm để mở"; chạm (ở đâu trên màn chờ cũng được) mới vào trang và bật nhạc
+  var splash = $('splash'), openBtn = $('openBtn');
+  function loaded() {
+    if (splash.classList.contains('loaded')) return;
+    splash.classList.add('loaded'); openBtn.tabIndex = 0;
+    try { openBtn.focus({ preventScroll: true }); } catch (e) {}
+  }
+  splash.addEventListener('click', function () {
+    if (!splash.classList.contains('loaded') || ready) return;
+    reveal(); playMusic(); buzz(10);
+  });
+
+  /* ---------- Nhạc nền: phát sau cú chạm mở trang, đĩa nhạc bên phải để bật/tắt ---------- */
+  var bgm = $('bgm'), disc = $('music'), wantMusic = false;
+  function setDisc(on) { disc.classList.toggle('on', on); disc.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  function playMusic() {
+    wantMusic = true;
+    var p = bgm.play();
+    if (p && p.catch) p.catch(function () { setDisc(false); });
+  }
+  bgm.addEventListener('playing', function () { setDisc(true); });
+  bgm.addEventListener('pause', function () { setDisc(false); });
+  // Không có file nhạc hoặc lỗi tải: đĩa chỉ để trang trí
+  bgm.addEventListener('error', function () { wantMusic = false; setDisc(false); disc.disabled = true; });
+  disc.addEventListener('click', function () {
+    if (bgm.paused) playMusic(); else { wantMusic = false; bgm.pause(); }
+  });
+  // Rời tab/ứng dụng thì dừng nhạc, quay lại thì phát tiếp nếu đang bật
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { if (!bgm.paused) bgm.pause(); }
+    else if (wantMusic && ready) bgm.play().catch(function () {});
+  });
   var cover = $('coverImg');
   var coverReady = cover.decode ? cover.decode().catch(function () {}) : Promise.resolve();
   var fontsReady = window.gfReady.then(function () {
     if (!document.fonts || !document.fonts.load) return;
     return Promise.all([document.fonts.load('1em Anton'), document.fonts.load('800 1em "Be Vietnam Pro"')]);
   }).catch(function () {});
-  Promise.all([coverReady, fontsReady]).then(function () { setTimeout(reveal, reduce ? 0 : 350); });
-  setTimeout(reveal, 2500);
+  Promise.all([coverReady, fontsReady]).then(function () { setTimeout(loaded, reduce ? 0 : 350); });
+  setTimeout(loaded, 2500);
 
   /* ---------- Hạt (tim, confetti) trên canvas ---------- */
   var fx = $('fx'), ctx = fx.getContext('2d');

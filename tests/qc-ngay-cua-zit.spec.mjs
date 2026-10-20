@@ -44,7 +44,10 @@ function monitor(page) {
     (loc && !isSameOrigin(loc) ? m.external : m.consoleErrors).push(text);
   });
   page.on('requestfailed', (r) => {
-    const text = `${r.url()} (${r.failure()?.errorText ?? 'failed'})`;
+    const err = r.failure()?.errorText ?? 'failed';
+    // Browsers stream audio in pieces and abort the rest on purpose; that is not a broken asset.
+    if (/\.m4a(\?|$)/.test(r.url()) && /ABORTED|cancel/i.test(err)) return;
+    const text = `${r.url()} (${err})`;
     (isSameOrigin(r.url()) ? m.failedRequests : m.external).push(text);
   });
   page.on('response', (r) => {
@@ -77,8 +80,13 @@ test.afterEach(async ({ page }, testInfo) => {
 
 /* ---------- Helpers ---------- */
 
+// The splash is a tap-to-open gate (the tap also unlocks background music on mobile).
 async function openSite(page) {
   await page.goto('/');
+  // The button fades in (opacity 0 still counts as visible to Playwright), so wait for the splash's loaded state.
+  await expect(page.locator('#splash')).toHaveClass(/\bloaded\b/);
+  // The button "breathes" forever, so Playwright never sees it as stable; any tap on the splash opens the site.
+  await page.locator('#splash').click({ position: { x: 20, y: 20 } });
   await page.waitForFunction(() => document.documentElement.classList.contains('ready'));
   await expect(page.locator('#splash')).toBeHidden();
 }
@@ -123,11 +131,26 @@ test.describe('load and structure', () => {
     await expect(page).toHaveTitle('Ngày của Zịt');
   });
 
-  test('splash screen is removed within 3.5s', async ({ page }) => {
+  test('splash shows "Chạm để mở" within 3.5s and stays until tapped', async ({ page }) => {
     await page.goto('/');
-    // The reveal fallback timer is 2.5s, so 3.5s leaves room for the 0.5s fade.
-    await page.waitForFunction(() => document.documentElement.classList.contains('ready'), null, { timeout: 3500 });
+    // The loaded fallback timer is 2.5s, so 3.5s leaves room for the fade-in.
+    await expect(page.locator('#splash')).toHaveClass(/\bloaded\b/, { timeout: 3500 });
+    expect(await page.evaluate(() => document.documentElement.classList.contains('ready'))).toBe(false);
+    await page.locator('#openBtn').click({ force: true });
+    await page.waitForFunction(() => document.documentElement.classList.contains('ready'));
     await expect(page.locator('#splash')).toBeHidden();
+  });
+
+  test('background music starts on open and the disc toggles it', async ({ page }) => {
+    await openSite(page);
+    const bgm = page.locator('#bgm');
+    await expect.poll(() => bgm.evaluate((a) => !a.paused && a.readyState > 0 && !a.error)).toBe(true);
+    await expect(page.locator('#music')).toHaveClass(/\bon\b/);
+    await page.locator('#music').click({ force: true }); // the disc spins while playing, so it is never "stable"
+    await expect.poll(() => bgm.evaluate((a) => a.paused)).toBe(true);
+    await expect(page.locator('#music')).not.toHaveClass(/\bon\b/);
+    await page.locator('#music').click({ force: true }); // the disc spins while playing, so it is never "stable"
+    await expect.poll(() => bgm.evaluate((a) => !a.paused)).toBe(true);
   });
 
   test('every slide gets class "in" when scrolled to', async ({ page }) => {
@@ -166,7 +189,7 @@ test.describe('load and structure', () => {
     // Declared width/height reserve layout space; a mismatched ratio causes layout shift.
     expect(imgs.filter((i) => Math.abs(i.ratioDeclared - i.ratioActual) > 0.01).map((i) => i.src)).toEqual([]);
     const webpFiles = readdirSync(join(ROOT, 'photos')).filter((f) => f.endsWith('.webp')).sort();
-    const usedFiles = imgs.map((i) => i.src.replace(/^photos\//, '')).filter((s) => s.endsWith('.webp')).sort();
+    const usedFiles = imgs.map((i) => i.src.replace(/^(https:\/\/zit\.1bee\.vn\/)?photos\//, '')).filter((s) => s.endsWith('.webp')).sort();
     expect(usedFiles).toEqual(webpFiles);
   });
 
@@ -394,7 +417,8 @@ test.describe('question, gift and interactions', () => {
     // Clone the body and strip script, style, and canvas so JS source comments do not count as visible text.
     const text = await page.evaluate(() => {
       const c = document.body.cloneNode(true);
-      c.querySelectorAll('script,style,noscript,canvas').forEach((n) => n.remove());
+      // The marquee credits the song title (a proper name kept as-is), so it is excluded.
+      c.querySelectorAll('script,style,noscript,canvas,.marq').forEach((n) => n.remove());
       return `${document.title} ${c.textContent}`;
     });
     const hits = text.match(/(?<![\p{L}\p{M}])em(?![\p{L}\p{M}])/giu) ?? [];
