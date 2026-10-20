@@ -110,18 +110,21 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .photos::-webkit-scrollbar{display:none}
 .ph{position:relative;flex:0 0 100%;height:100%;margin:0;scroll-snap-align:center;scroll-snap-stop:always;background:var(--c,var(--ink));overflow:hidden}
 .ph img{display:block;width:100%;height:100%;object-fit:cover;transform-origin:50% 40%}
+/* Ảnh chưa tải xong hoặc lỗi: ẩn chữ mô tả, chỉ để nền màu chủ đạo của ảnh và một vệt sáng chạy qua */
+.ph img,.cover-bg{color:transparent;font-size:0}
+.s-photos.wait .ph.cur::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,#fff0 35%,#ffffff26 50%,#fff0 65%);background-size:250% 100%;animation:shimmer 1.2s linear infinite}
 .ph.cur img{animation:ken 7s var(--ease-out) both}
 .ph figcaption{--rot:-1.5deg;position:absolute;left:max(16px,env(safe-area-inset-left,0px));right:76px;bottom:108px;width:fit-content;max-width:calc(100% - 92px);background:var(--butter);color:var(--ink);font-weight:800;font-size:15px;line-height:1.35;padding:9px 14px;border-radius:12px;box-shadow:3px 3px 0 var(--hot);transform:rotate(var(--rot))}
 .ph:nth-child(even) figcaption{--rot:1.5deg}
 .js .ph:not(.cur) figcaption{opacity:0}
 .ph.cur figcaption{animation:cap-in .55s var(--ease-back) .25s both}
-.s-photos.paused .ph.cur img,.s-photos:not(.in) .ph.cur img{animation-play-state:paused}
+.s-photos.paused .ph.cur img,.s-photos.wait .ph.cur img,.s-photos:not(.in) .ph.cur img{animation-play-state:paused}
 .bars{position:absolute;z-index:3;top:46px;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:4px;pointer-events:none}
 .bars i{flex:1;height:3px;border-radius:2px;background:#ffffff59;overflow:hidden}
 .bars b{display:block;height:100%;background:#fff;transform-origin:left;transform:scaleX(0)}
 .bars i.done b{transform:none}
 .bars i.cur b{animation:story var(--story) linear forwards}
-.s-photos.paused .bars i.cur b,.s-photos:not(.in) .bars i.cur b{animation-play-state:paused}
+.s-photos.paused .bars i.cur b,.s-photos.wait .bars i.cur b,.s-photos:not(.in) .bars i.cur b{animation-play-state:paused}
 .ph-tag{position:absolute;z-index:3;top:60px;left:max(16px,env(safe-area-inset-left,0px));background:#14060fb3;color:#fff;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border-radius:99px;pointer-events:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .ph-hint{position:absolute;z-index:3;right:max(16px,env(safe-area-inset-right,0px));top:60px;background:var(--hot);color:var(--ink);font-size:12px;font-weight:800;padding:6px 10px;border-radius:99px;pointer-events:none;animation:nudge 1.3s ease-in-out infinite;transition:opacity var(--t-quick)}
 .ph-hint.gone{opacity:0}
@@ -233,6 +236,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 @keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(.96)}45%{transform:scale(1.1)}}
 @keyframes ken{from{transform:scale(1.1)}to{transform:scale(1)}}
 @keyframes cap-in{from{opacity:0;transform:translateY(14px) rotate(var(--rot)) scale(.9)}to{opacity:1;transform:rotate(var(--rot))}}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:-150% 0}}
 @keyframes story{to{transform:none}}
 @keyframes ink{from{opacity:0;filter:blur(6px);transform:translateY(6px)}to{opacity:1;filter:none;transform:none}}
 @keyframes gl1{0%,86%,100%{transform:translate(-3px,0);clip-path:inset(0)}88%{transform:translate(-9px,2px);clip-path:inset(10% 0 55% 0)}92%{transform:translate(7px,-2px);clip-path:inset(55% 0 12% 0)}}
@@ -578,6 +582,16 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
     figs.forEach(function (f, k) { f.classList.toggle('cur', k === i); });
     bars.forEach(function (el, k) { el.classList.toggle('done', k < i); el.classList.remove('cur'); });
     if (reduce) bars[i].classList.add('done'); else replayClass(bars[i], 'cur');
+    // Mạng chậm: giữ story đứng yên đến khi ảnh hiện tại tải xong (hoặc lỗi) rồi mới chạy
+    var im = figs[i].querySelector('img');
+    im.loading = 'eager';
+    if (im.complete) sP.classList.remove('wait');
+    else {
+      sP.classList.add('wait');
+      var done = function () { if (cur === i) sP.classList.remove('wait'); };
+      im.addEventListener('load', done, { once: true });
+      im.addEventListener('error', done, { once: true });
+    }
     // Tải trước ảnh kế tiếp để lúc chuyển không bị trống
     var nx = figs[i + 1] && figs[i + 1].querySelector('img');
     if (nx) nx.loading = 'eager';
