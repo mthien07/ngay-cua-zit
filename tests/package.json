@@ -1,0 +1,13 @@
+{
+  "name": "ngay-cua-zit-qc",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "qc": "playwright test --config playwright.config.mjs",
+    "qc:mobile": "playwright test --config playwright.config.mjs --project=chromium-mobile-375",
+    "qc:iphone": "playwright test --config playwright.config.mjs --project=webkit-iphone"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.59.1"
+  }
+}
