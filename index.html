@@ -91,6 +91,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .splash p{transition:opacity var(--t-std)}
 .splash .open{position:absolute;bottom:20%;padding:14px 28px;border-radius:99px;background:var(--hot);color:var(--ink);font-weight:800;font-size:16px;box-shadow:0 10px 30px #ff2d6f55;opacity:0;transform:translateY(12px) scale(.96);pointer-events:none;transition:opacity var(--t-std) var(--ease-out),transform var(--t-std) var(--ease-back)}
 .splash.loaded{cursor:pointer}
+.splash .open:focus-visible{outline:3px solid var(--paper);outline-offset:4px}
 .splash.loaded p{opacity:0;transition-duration:.15s}
 .splash.loaded .open{opacity:1;transform:none;pointer-events:auto;transition-delay:.15s;animation:breathe 2.2s ease-in-out .8s infinite}
 
@@ -533,7 +534,6 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
   function loaded() {
     if (splash.classList.contains('loaded')) return;
     splash.classList.add('loaded'); openBtn.tabIndex = 0;
-    try { openBtn.focus({ preventScroll: true }); } catch (e) {}
   }
   splash.addEventListener('click', function () {
     if (!splash.classList.contains('loaded') || ready) return;
